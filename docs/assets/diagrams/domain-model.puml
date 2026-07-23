@@ -1,0 +1,59 @@
+@startuml
+hide methods
+skinparam classAttributeIconSize 0
+
+class User {
+  id: UUID
+  email: string
+}
+class CandidateProfile {
+  id: UUID
+  preferences_version: integer
+}
+class Resume {
+  id: UUID
+  active_version_id: UUID
+}
+class ResumeVersion {
+  id: UUID
+  content_json: JSONB
+  provenance: JSONB
+}
+class ResumeRender {
+  id: UUID
+  format: PDF | DOCX | HTML
+  checksum: string
+}
+class JobPosting {
+  id: UUID
+  status: string
+}
+class Company {
+  id: UUID
+  name: string
+}
+class Application {
+  id: UUID
+  status: string
+  idempotency_key: string
+}
+class ApplicationPackage {
+  id: UUID
+  job_snapshot: JSONB
+}
+class Interview {
+  id: UUID
+  scheduled_at: datetime
+}
+
+User "1" --> "1" CandidateProfile
+CandidateProfile "1" --> "0..*" Resume
+Resume "1" --> "1..*" ResumeVersion
+ResumeVersion "1" --> "0..*" ResumeRender
+Company "1" --> "0..*" JobPosting
+CandidateProfile "1" --> "0..*" Application
+JobPosting "1" --> "0..*" Application
+Application "1" --> "1" ApplicationPackage
+ApplicationPackage "1" --> "1" ResumeRender
+Application "1" --> "0..*" Interview
+@enduml

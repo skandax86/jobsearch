@@ -1,0 +1,21 @@
+flowchart TB
+    subgraph ACP[ACP: internal agent coordination]
+      Planner[Planner Agent] --> Supervisor[Supervisor]
+      Supervisor --> ResumeAgent[Resume Agent]
+      Supervisor --> SearchAgent[Job Discovery Agent]
+      Supervisor --> ApplyAgent[Application Agent]
+      ResumeAgent --> State[(Durable Workflow State)]
+      SearchAgent --> State
+      ApplyAgent --> State
+    end
+
+    subgraph MCP[MCP: external capabilities]
+      Tools[Tool Registry] --> JobSearch[Job Search Tools]
+      Tools --> Files[Storage / File Tools]
+      Tools --> Gmail[Email / Calendar Tools]
+      Tools --> ATS[ATS / Browser Tools]
+    end
+
+    ResumeAgent --> Tools
+    SearchAgent --> Tools
+    ApplyAgent --> Tools

@@ -1,0 +1,25 @@
+stateDiagram-v2
+    [*] --> Draft
+    Draft --> Preparing
+    Preparing --> AwaitingApproval
+    AwaitingApproval --> Approved: user approves
+    AwaitingApproval --> Cancelled: user rejects
+    Approved --> Submitting
+    Submitting --> Submitted: confirmation captured
+    Submitting --> ManualReview: outcome ambiguous
+    Submitting --> Failed: safe failure
+    ManualReview --> Submitted: confirmed
+    ManualReview --> Preparing: not submitted
+    Submitted --> Assessment
+    Submitted --> Interview
+    Submitted --> Rejected
+    Assessment --> Interview
+    Assessment --> Rejected
+    Interview --> Offer
+    Interview --> Rejected
+    Draft --> Withdrawn
+    Submitted --> Withdrawn
+    Offer --> [*]
+    Rejected --> [*]
+    Withdrawn --> [*]
+    Cancelled --> [*]

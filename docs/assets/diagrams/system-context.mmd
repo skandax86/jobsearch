@@ -1,0 +1,22 @@
+flowchart TB
+    User[Candidate] --> Web[Next.js Web App]
+    User --> Extension[Browser Extension]
+    Web --> Gateway[FastAPI API Gateway]
+    Extension --> Gateway
+
+    Gateway --> Domains[Domain Services]
+    Domains --> ACP[ACP Orchestrator]
+    ACP --> Agents[Specialized AI Agents]
+    Agents --> MCP[MCP Integration Layer]
+
+    Domains --> Postgres[(PostgreSQL + pgvector)]
+    Domains --> Redis[(Redis)]
+    Domains --> Storage[(Object Storage)]
+    ACP --> Queue[Event Bus / Worker Queues]
+    Queue --> Workers[Workers]
+    Workers --> MCP
+
+    MCP --> JobBoards[Job Boards and ATS]
+    MCP --> Google[Google Gmail / Calendar / Drive]
+    MCP --> Github[GitHub]
+    MCP --> Browser[Isolated Playwright Browser]

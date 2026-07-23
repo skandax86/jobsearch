@@ -1,0 +1,25 @@
+flowchart LR
+    Upload[Source PDF / DOCX] --> Parse[Parser]
+    Parse --> Review{Extraction reviewed?}
+    Review -- No --> UserReview[User review]
+    UserReview --> Canonical[Canonical Resume JSON]
+    Review -- Yes --> Canonical
+
+    Canonical --> Optimize[Resume Optimizer]
+    Job[Job Snapshot] --> Optimize
+    Optimize --> Proposal[Tailored Resume JSON]
+    Proposal --> Approval{User approval required?}
+    Approval -- Yes --> Approve[Approve content]
+    Approval -- No --> Template
+    Approve --> Template[Versioned template]
+
+    Template --> Latex[LaTeX renderer]
+    Template --> Docx[DOCX renderer]
+    Template --> Html[HTML renderer]
+    Latex --> Pdf[Text-selectable PDF]
+    Docx --> DocxOut[Editable DOCX]
+    Html --> HtmlOut[HTML / PDF preview]
+    Pdf --> Validate[Render and ATS validation]
+    DocxOut --> Validate
+    HtmlOut --> Validate
+    Validate --> Artifact[Immutable render artifact]

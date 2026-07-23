@@ -1,0 +1,27 @@
+@startuml
+title Human-approved application workflow
+
+actor Candidate
+participant "API Service" as API
+participant "ACP Orchestrator" as ACP
+participant "Resume Optimizer" as Optimizer
+participant "Cover Letter Agent" as Letter
+participant "Application Service" as Applications
+participant "Browser / ATS MCP" as MCP
+
+Candidate -> API: Prepare application(jobId)
+API -> ACP: Start workflow(profile snapshot, job snapshot)
+ACP -> Optimizer: Tailor verified Resume JSON
+Optimizer --> ACP: Structured proposal + confidence + provenance
+ACP -> Letter: Draft cover letter
+Letter --> ACP: Draft + validation result
+ACP --> API: Awaiting approval(package reference)
+API --> Candidate: Show package and changes
+Candidate -> API: Approve package
+API -> Applications: Persist approval and idempotency key
+Applications -> ACP: Resume submission workflow
+ACP -> MCP: Submit approved package
+MCP --> ACP: Confirmation evidence or ambiguous result
+ACP -> Applications: Persist submitted/manual-review state
+Applications --> Candidate: Status notification
+@enduml

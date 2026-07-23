@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Tic-Tac-Toe Duel</title>
+    <style>
+        /* --- Global Styles & Reset --- */
+        :root {
+            --bg-color: #1a202c; /* Dark background */
+            --card-bg: #2d3744; /* Mid background for board */
+            --x-color: #e53e3e; /* Red accent for X */
+            --o-color: #3182ce; /* Blue accent for O */
+            --text-light: #edf2f7; /* Light text color */
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: var(--text-light);
+        }
+
+        .game-container {
+            text-align: center;
+            padding: 40px;
+            border-radius: 15px;
+            background: var(--card-bg);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.7);
+            transition: all 0.3s ease;
+        }
+
+        h1 {
+            font-weight: 300;
+            margin-bottom: 20px;
+        }
+
+        /* --- Scoreboard Styling --- */
+        .scoreboard {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            padding: 10px;
+            border-bottom: 2px solid #4a5568;
+        }
+
+        .score {
+            font-size: 1.4em;
+            padding: 5px 10px;
+        }
+
+        .score span {
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+
+
+        /* --- Status Display --- */
+        #status {
+            margin: 20px 0;
+            font-size: 1.6em;
+            padding: 15px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            min-height: 35px; 
+        }
+
+        /* --- Tic-Tac-Toe Board Styling (The Core Design) --- */
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            width: calc(300px + 20px);
+            height: calc(300px + 20px);
+            margin: 30px auto;
+            background-color: var(--card-bg);
+            border: 5px solid #4a5568; 
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .cell {
+            background-color: rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3.5em; 
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            user-select: none;
+        }
+
+        .cell:hover {
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+
+        /* X and O specific styling */
+        .cell.x {
+            color: var(--x-color);
+            animation: popIn 0.3s ease-out;
+        }
+
+        .cell.o {
+            color: var(--o-color);
+            animation: popIn 0.3s ease-out;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* --- Controls & Footer --- */
+        .controls button {
+            padding: 12px 30px;
+            font-size: 1.1em;
+            background-color: #48bb78; /* Success Green */
+            color: var(--bg-color);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            margin-top: 20px;
+        }
+
+        .controls button:hover {
+            background-color: #38a169; /* Darker Green */
+            transform: translateY(-2px);
+        }
+
+        /* Match mode styling for larger screens */
+        .match-mode-info {
+            margin-top: 20px;
+            font-size: 0.9em;
+            color: #a0aec0;
+        }
+
+        /* Mobile Optimization */
+        @media (max-width: 450px) {
+            .cell {
+                font-size: 2.8em;
+            }
+        }
+    </style>
+</head>
+<body class="match-mode">
+
+    <div class="game-container">
+        <h1>Ultimate Tic-Tac-Toe Duel</h1>
+
+        <!-- Match Scoreboard -->
+        <div class="scoreboard">
+            <div id="playerXScoreInfo">Player X: <span id="scoreX">0</span></div>
+            <div id="playerOScoreInfo">Player O: <span id="scoreO">0</span></div>
+        </div>
+
+        <!-- Game Status/Turn Indicator -->
+        <div id="status">Player X's Turn</div>
+
+        <!-- The Game Board -->
+        <div class="board" id="gameBoard">
+            <div class="cell" data-index="0"></div>
+            <div class="cell" data-index="1"></div>
+            <div class="cell" data-index="2"></div>
+            <div class="cell" data-index="3"></div>
+            <div class="cell" data-index="4"></div>
+            <div class="cell" data-index="5"></div>
+            <div class="cell" data-index="6"></div>
+            <div class="cell" data-index="7"></div>
+            <div class="cell" data-index="8"></div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <button id="resetButton">Play New Round</button>
+        </div>
+        <p class="match-mode-info">Current Match Scores: X vs O</p>
+    </div>
+
+    <script>
+        // --- JavaScript Logic for the Game ---
+
+        const cells = document.querySelectorAll('.cell');
+        const boardElement = document.getElementById('gameBoard');
+        const statusDisplay = document.getElementById('status');
+        const resetButton = document.getElementById('resetButton');
+
+        // Score Tracking Elements
+        const scoreXElement = document.getElementById('scoreX');
+        const scoreOElement = document.getElementById('scoreO');
+
+        // Game State Variables (RESETS per round)
+        let gameActive = true; // Active for the current board session
+        let currentPlayer = 'X';
+        let gameState = ["", "", "", "", "", "", "", "", ""]; // Represents the 9 cells
+
+        // Match State Variables (PERSISTS between rounds)
+        let matchScores = { X: 0, O: 0 };
+
+        // Winning combinations (indices of gameState array)
+        const winningConditions = [
+            [0, 1, 2], // Top row
+            [3, 4, 5], // Middle row
+            [6, 7, 8], // Bottom row
+            [0, 3, 6], // Left column
+            [1, 4, 7], // Middle column
+            [2, 5, 8], // Right column
+            [0, 4, 8], // Diagonal \
+            [2, 4, 6]  // Diagonal /
+        ];
+
+        /**
+         * Updates the persistent match scores display.
+         */
+        function updateScoresDisplay() {
+            scoreXElement.textContent = matchScores.X;
+            scoreOElement.textContent = matchScores.O;
+        }
+
+
+        /**
+         * Handles a player making a move on a cell.
+         */
+        function handleCellClick(clickedCellEvent) {
+            const clickedCell = event.target;
+            const clickedCellIndex = parseInt(clickedCell.getAttribute('data-index'));
+
+            // Check if the cell is already filled or game is over
+            if (gameState[clickedCellIndex] !== "" || !gameActive) {
+                return;
+            }
+
+            // Update state and appearance
+            gameState[clickedCellIndex] = currentPlayer;
+            clickedCell.textContent = currentPlayer;
+            clickedCell.classList.add(currentPlayer === 'X' ? 'x' : 'o'); // Apply visual class
+
+            // Check for result after the move
+            checkResult();
+        }
+
+        /**
+         * Checks if the current move resulted in a win or a draw.
+         */
+        function checkResult() {
+            let roundWon = false;
+
+            for (let i = 0; i < winningConditions.length; i++) {
+                const [a, b, c] = winningConditions[i];
+                // Check for win condition (all three spots match and are filled)
+                if (gameState[a] && gameState[a] === currentPlayer && 
+                    gameState[a] === gameState[b] && gameState[a] === gameState[c]) {
+                    roundWon = true;
+                    break;
+                }
+            }
+
+            if (roundWon) {
+                // Game round ends in a win
+                statusDisplay.innerHTML = `🏆 Player ${currentPlayer} Wins the Round! 🎉`;
+                matchScores[currentPlayer]++; // Update Match Score
+                updateScoresDisplay();
+                gameActive = false;
+                // The button now resets the round, not the match
+            } else {
+                // Check for Draw (if all spots are filled)
+                const roundDraw = gameState.every(cell => cell !== "");
+                if (roundDraw) {
+                    statusDisplay.innerHTML = `🤝 Draw! No winner this round.`;
+                    gameActive = false;
+                } else {
+                    // If no win or draw, switch players and continue the round
+                    handleTurnChange();
+                }
+            }
+        }
+
+        /**
+         * Switches the current player and updates the status message.
+         */
+        function handleTurnChange() {
+            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+            statusDisplay.innerHTML = `Player ${currentPlayer}'s Turn`;
+        }
+
+        /**
+         * Resets the current game board for a new round while preserving match scores.
+         */
+        function handleNewRound() {
+            gameActive = true;
+            currentPlayer = 'X'; // Always X starts the round (or whoever is designated)
+            gameState = ["", "", "", "", "", "", "", "", ""]; // Reset the board state
+
+            // Clear visual display and reset classes
+            cells.forEach(cell => {
+                cell.textContent = '';
+                cell.classList.remove('x', 'o');
+            });
+
+            statusDisplay.innerHTML = `Player X's Turn`;
+        }
+
+
+        // --- Initialization & Event Listeners ---
+        cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+        resetButton.addEventListener('click', handleNewRound);
+
+        // Initial setup call to ensure scores are visible on load
+        updateScoresDisplay(); 
+    </script>
+
+</body>
+</html>
+```
