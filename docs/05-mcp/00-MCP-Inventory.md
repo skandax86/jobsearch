@@ -17,6 +17,7 @@ Defines the external capabilities exposed to CareerPilot agents through MCP. MCP
 | Email | gmail | search, draft, send approved message | OAuth and scope minimum |
 | Calendar | calendar | read availability, create approved event | OAuth and explicit consent |
 | Portfolio | github | read public/authorized repositories | read-only |
+| LinkedIn | linkedin | connection status, OpenID profile, job search (partner-gated) | OAuth OpenID; Jobs API unsupported without partner access |
 | Data access | domain API adapter | authorized domain reads | agents never receive broad SQL access |
 
 ## Contract Rules

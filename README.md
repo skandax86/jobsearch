@@ -32,10 +32,13 @@ make up
 # 3. Install dependencies
 make install
 
-# 4. Run API (terminal 1)
+# 4. Apply database migrations
+make migrate
+
+# 5. Run API (terminal 1)
 make api
 
-# 5. Run web (terminal 2)
+# 6. Run web (terminal 2)
 make web
 ```
 
@@ -49,10 +52,40 @@ make web
 | Step | Scope | Status |
 |------|-------|--------|
 | 1 | Project scaffold | ✅ |
-| 2 | Database schema + migrations | Planned |
-| 3 | Auth (identity domain) | Planned |
-| 4 | Resume upload + storage | Planned |
-| 5 | Resume parsing pipeline | Planned |
-| 6 | Job discovery | Planned |
+| 2 | Database schema + migrations | ✅ |
+| 3 | Auth (identity domain) | ✅ |
+| 4 | Resume upload + storage | ✅ |
+| 5 | Resume parsing pipeline | ✅ |
+| 6 | Job discovery | ✅ (demo + Remotive + optional Naukri) |
+| 7 | Job matching / scoring | ✅ |
+| 8 | LinkedIn personal connect + MCP + Job Discovery agent | ✅ |
+
+## Cursor MCP (optional)
+
+Personal job-board tools in Cursor (not app SSO). Config: `.cursor/mcp.json`
+
+| Server | Purpose |
+|--------|---------|
+| `microsoft-learn` | LinkedIn/Microsoft API docs |
+| `mcp-server-linkedin` | Your LinkedIn browser session (`uvx` + `--login`) |
+| `naukri-mcp` | Naukri search / apply / resume tailor ([Naukri-MCP](https://github.com/sanjeev-txt/Naukri-MCP)) |
+
+**Naukri in the web app (Discover):**
+
+```bash
+make naukri-mcp-setup
+# fill NAUKRI_EMAIL / NAUKRI_PASSWORD in .env.naukri
+cd apps/api && . .venv/bin/activate && pip install -e '.[naukri]' && playwright install chromium
+```
+
+Then on the dashboard enable the **Naukri** checkbox and click Discover (uses location / experience / skills filters).
+
+**LinkedIn (Cursor only for now):**
+
+```bash
+uvx mcp-server-linkedin@latest --login
+```
+
+⚠️ Browser automation against LinkedIn/Naukri can risk account restriction. Use sparingly; never commit `.env.naukri`.
 
 See `docs/` for full architecture and domain specifications.

@@ -1,11 +1,12 @@
 import logging
 import sys
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncIterator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+import careerpilot.db.models  # noqa: F401 — register all ORM mappers
 from careerpilot import __version__
 from careerpilot.api.v1.router import api_v1_router
 from careerpilot.config import settings
@@ -25,7 +26,16 @@ def configure_logging() -> None:
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     configure_logging()
     logger.info("Starting %s v%s (%s)", settings.app_name, __version__, settings.app_env)
+    from careerpilot.storage import ensure_bucket
+
+    try:
+        await ensure_bucket()
+    except Exception:
+        logger.exception("Failed to ensure object storage bucket; uploads may fail")
     yield
+    from careerpilot.redis_client import close_redis
+
+    await close_redis()
     logger.info("Shutting down %s", settings.app_name)
 
 

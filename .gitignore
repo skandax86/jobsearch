@@ -13,12 +13,16 @@ build/
 .env
 .env.local
 .env.*.local
+.env.naukri
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
+
+# Vendored MCP clones (installed via make naukri-mcp-setup)
+tools/naukri-mcp/
 
 # OS
 .DS_Store
