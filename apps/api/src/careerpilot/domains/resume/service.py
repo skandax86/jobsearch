@@ -22,6 +22,7 @@ from careerpilot.domains.identity.models import User
 from careerpilot.domains.resume.models import Resume, ResumeContent, ResumeRender, ResumeVersion
 from careerpilot.domains.resume.parser.extract import ExtractionError
 from careerpilot.domains.resume.schema import normalize_resume_content, resume_origin
+from careerpilot.mcp.storage.server import call_storage_tool
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,33 @@ ORIGIN_UPLOADED = "uploaded"
 ORIGIN_GENERATED = "generated"
 SORT_CREATED = "created_at"
 SORT_UPDATED = "updated_at"
+
+
+async def _put_source_object(*, object_key: str, data: bytes, content_type: str) -> None:
+    import base64
+
+    result = await call_storage_tool(
+        "put_object",
+        object_key=object_key,
+        data_b64=base64.b64encode(data).decode("ascii"),
+        content_type=content_type,
+    )
+    if result.status != "SUCCESS":
+        # Fall back to direct adapter if MCP wrapper fails unexpectedly.
+        logger.warning("storage MCP put_object failed: %s", result.error)
+        await object_storage.put_object(
+            object_key=object_key, data=data, content_type=content_type
+        )
+
+
+async def _get_source_object(object_key: str) -> bytes:
+    import base64
+
+    result = await call_storage_tool("get_object", object_key=object_key)
+    if result.status == "SUCCESS":
+        return base64.b64decode((result.result or {}).get("data_b64") or "")
+    logger.warning("storage MCP get_object failed: %s", result.error)
+    return await object_storage.get_object(object_key)
 
 
 class ResumeError(Exception):
@@ -92,7 +120,7 @@ async def upload_resume(
     resume_id = uuid.uuid4()
     object_key = f"users/{user.id}/resumes/{resume_id}/source.{ext}"
 
-    await object_storage.put_object(object_key=object_key, data=data, content_type=mime)
+    await _put_source_object(object_key=object_key, data=data, content_type=mime)
 
     resume = Resume(
         id=resume_id,
@@ -423,7 +451,7 @@ async def parse_resume(db: AsyncSession, *, resume_id: uuid.UUID) -> Resume:
     await db.commit()
 
     try:
-        data = await object_storage.get_object(resume.source_object_key)
+        data = await _get_source_object(resume.source_object_key)
         workflow, result = await start_resume_parse(
             db,
             user_id=profile.user_id,

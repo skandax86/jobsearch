@@ -298,7 +298,7 @@ async def list_integrations(db: AsyncSession, *, user: User) -> list[dict[str, A
             select(IntegrationConnection).where(IntegrationConnection.user_id == user.id)
         )
     )
-    return [
+    items = [
         {
             "provider": row.provider,
             "status": row.status,
@@ -310,3 +310,31 @@ async def list_integrations(db: AsyncSession, *, user: User) -> list[dict[str, A
         }
         for row in rows
     ]
+
+    # Enrich LinkedIn via in-process MCP (source of truth for connection tools).
+    from careerpilot.mcp.linkedin.server import call_linkedin_tool
+
+    mcp_status = await call_linkedin_tool(
+        db, tool_name="linkedin_connection_status", user_id=user.id
+    )
+    if mcp_status.status == "SUCCESS":
+        connected = bool((mcp_status.result or {}).get("connected"))
+        linkedin_item = next((i for i in items if i["provider"] == PROVIDER), None)
+        if linkedin_item is None and connected:
+            items.append(
+                {
+                    "provider": PROVIDER,
+                    "status": "active",
+                    "scopes": (mcp_status.result or {}).get("scopes"),
+                    "external_account_id": (mcp_status.result or {}).get("external_account_id"),
+                    "last_synced_at": None,
+                    "expires_at": (mcp_status.result or {}).get("expires_at"),
+                    "connected": True,
+                }
+            )
+        elif linkedin_item is not None:
+            linkedin_item["connected"] = connected
+            linkedin_item["mcp"] = True
+
+    return items
+
