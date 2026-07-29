@@ -37,6 +37,22 @@ class Settings(BaseSettings):
     storage_region: str = "us-east-1"
     resume_max_bytes: int = 10 * 1024 * 1024
 
+    # AI resume extraction (OpenAI-compatible: OpenAI, LM Studio, DeepSeek, etc.)
+    resume_ai_enabled: bool = False
+    resume_ai_api_base: str = ""
+    resume_ai_api_key: str = ""
+    resume_ai_model: str = "gpt-4o-mini"
+    resume_ai_timeout_seconds: float = 180.0
+    resume_ai_max_chars: int = 60000
+    resume_ai_max_tokens: int = 8192
+    resume_ai_json_mode: bool = True
+    # Prefer json_schema response_format when the provider supports it.
+    # LM Studio (newer) accepts json_schema|text and rejects json_object.
+    resume_ai_json_schema: bool = False
+    # Second LLM pass — doubles latency; keep false for local/small models.
+    resume_ai_verify_pass: bool = False
+    resume_ai_fallback_heuristic: bool = True
+
     session_ttl_days: int = 30
     session_cookie_name: str = "careerpilot_session"
     session_cache_enabled: bool = True

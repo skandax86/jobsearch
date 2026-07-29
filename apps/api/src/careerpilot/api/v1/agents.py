@@ -58,3 +58,29 @@ async def list_linkedin_mcp_tools(user: CurrentUser) -> JSONResponse:
             data={"server": "linkedin", "tools": linkedin_mcp.list_tools()}
         ).model_dump()
     )
+
+
+@router.get("/mcp/resume/tools")
+async def list_resume_mcp_tools(user: CurrentUser) -> JSONResponse:
+    _ = user
+    from careerpilot.mcp.resume.server import resume_mcp
+
+    return JSONResponse(
+        content=ApiResponse(
+            data={"server": "resume", "tools": resume_mcp.list_tools()}
+        ).model_dump()
+    )
+
+
+@router.get("/acp/workflows")
+async def list_acp_workflows(user: CurrentUser) -> JSONResponse:
+    _ = user
+    from careerpilot.acp.orchestrator import acp
+    # Ensure resume workflow is registered.
+    import careerpilot.acp.workflows.resume_parse  # noqa: F401
+
+    return JSONResponse(
+        content=ApiResponse(
+            data={"workflows": acp.list_workflows()}
+        ).model_dump()
+    )

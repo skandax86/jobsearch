@@ -19,8 +19,16 @@ from careerpilot.domains.jobs.schemas import (
     DiscoverJobsRequest,
     JobListData,
     JobPublic,
+    LinkedInJobUrlData,
+    LinkedInJobUrlRequest,
 )
-from careerpilot.domains.jobs.service import JobError, discover_jobs, get_job, list_jobs
+from careerpilot.domains.jobs.service import (
+    JobError,
+    discover_jobs,
+    get_job,
+    ingest_linkedin_job_url,
+    list_jobs,
+)
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -75,6 +83,31 @@ async def discover(
             items=[_job_public(job) for job in result["items"]],
             warnings=list(result.get("warnings") or []),
         )
+    )
+    return JSONResponse(content=body.model_dump(mode="json"))
+
+
+@router.post("/from-linkedin-url")
+async def from_linkedin_url(
+    payload: LinkedInJobUrlRequest,
+    user: CurrentUser,
+    db: DbSession,
+) -> JSONResponse:
+    _ = user
+    try:
+        result = await ingest_linkedin_job_url(
+            db,
+            url=payload.url,
+            description_override=payload.description_override,
+        )
+    except JobError as exc:
+        code = {
+            "invalid_url": status.HTTP_400_BAD_REQUEST,
+            "fetch_failed": status.HTTP_502_BAD_GATEWAY,
+        }.get(exc.code, status.HTTP_400_BAD_REQUEST)
+        return _error(code, exc.code, exc.message)
+    body = ApiResponse(
+        data=LinkedInJobUrlData(created=result["created"], job=_job_public(result["job"]))
     )
     return JSONResponse(content=body.model_dump(mode="json"))
 

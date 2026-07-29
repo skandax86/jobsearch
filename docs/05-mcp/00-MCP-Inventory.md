@@ -11,6 +11,7 @@ Defines the external capabilities exposed to CareerPilot agents through MCP. MCP
 
 | Capability | MCP server | Allowed tools | Data/side-effect policy |
 |---|---|---|---|
+| Resume parse | resume (in-process) | extract_resume_text, segment_resume_sections, structure_resume_heuristic, structure_resume_ai, validate_resume_json | user-scoped; orchestrated via ACP `resume_parse` |
 | Resume files | storage/filesystem | read source, retrieve render, store artifact | user-scoped only |
 | Job discovery | job-search | search, retrieve posting | read-only; provider terms apply |
 | ATS/application | ats/browser | inspect form, draft/submit approved package | side effects require policy/approval |

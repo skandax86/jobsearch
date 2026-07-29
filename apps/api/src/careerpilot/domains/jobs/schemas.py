@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class DiscoverJobsRequest(BaseModel):
@@ -67,6 +67,29 @@ class DiscoverJobsData(BaseModel):
     updated: int
     items: list[JobPublic]
     warnings: list[str] = Field(default_factory=list)
+
+
+class LinkedInJobUrlRequest(BaseModel):
+    url: str = Field(min_length=8, max_length=4000)
+    description_override: str | None = Field(default=None, max_length=20000)
+
+    @field_validator("url")
+    @classmethod
+    def canonicalize_linkedin_url(cls, value: str) -> str:
+        from careerpilot.domains.jobs.providers.linkedin_url import (
+            LinkedInUrlError,
+            canonicalize_linkedin_job_url,
+        )
+
+        try:
+            return canonicalize_linkedin_job_url(value)
+        except LinkedInUrlError as exc:
+            raise ValueError(exc.message) from exc
+
+
+class LinkedInJobUrlData(BaseModel):
+    created: bool
+    job: JobPublic
 
 
 class ApiResponse(BaseModel):

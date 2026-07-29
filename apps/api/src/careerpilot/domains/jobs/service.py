@@ -354,3 +354,28 @@ async def get_job(db: AsyncSession, *, job_id: uuid.UUID) -> JobPosting:
     if job is None:
         raise JobError("not_found", "Job not found.")
     return job
+
+
+async def ingest_linkedin_job_url(
+    db: AsyncSession,
+    *,
+    url: str,
+    description_override: str | None = None,
+) -> dict[str, Any]:
+    """Fetch a LinkedIn job URL and upsert into the job catalog."""
+    from careerpilot.domains.jobs.providers.linkedin_url import (
+        LinkedInUrlError,
+        fetch_linkedin_job_from_url,
+    )
+
+    try:
+        discovered = await fetch_linkedin_job_from_url(
+            url, description_override=description_override
+        )
+    except LinkedInUrlError as exc:
+        raise JobError(exc.code, exc.message) from exc
+
+    posting, created = await _ingest_one(db, discovered)
+    await db.commit()
+    job = await get_job(db, job_id=posting.id)
+    return {"job": job, "created": created}

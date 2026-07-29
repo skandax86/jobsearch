@@ -14,6 +14,98 @@ export type CandidateProfile = {
   preferences_version: number;
 };
 
+export type ExperienceEntry = {
+  id?: string;
+  company?: string | null;
+  title?: string | null;
+  location?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  is_current?: boolean;
+  summary?: string | null;
+  bullets?: string[];
+};
+
+export type EducationEntry = {
+  id?: string;
+  institution?: string | null;
+  degree?: string | null;
+  specialization?: string | null;
+  location?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  is_current?: boolean;
+  score?: string | null;
+  score_type?: string | null;
+  summary?: string | null;
+  details?: string[];
+};
+
+export type ProjectEntry = {
+  id?: string;
+  title?: string | null;
+  organization?: string | null;
+  url?: string | null;
+  location?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  is_current?: boolean;
+  summary?: string | null;
+  bullets?: string[];
+  technologies?: string[];
+};
+
+export type CertificationEntry = {
+  id?: string;
+  title?: string | null;
+  issuer?: string | null;
+  date?: string | null;
+  expiry_date?: string | null;
+  credential_id?: string | null;
+  url?: string | null;
+  summary?: string | null;
+};
+
+export type AwardEntry = {
+  id?: string;
+  title?: string | null;
+  issuer?: string | null;
+  date?: string | null;
+  summary?: string | null;
+};
+
+export type ResumeContentJson = {
+  schema_version?: string;
+  contact?: {
+    name?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    location?: string | null;
+    links?: string[];
+  };
+  headline?: string | null;
+  summary?: string | null;
+  experience?: ExperienceEntry[];
+  education?: EducationEntry[];
+  skills?: string[];
+  projects?: ProjectEntry[];
+  certifications?: CertificationEntry[];
+  awards?: AwardEntry[];
+  languages?: string[];
+  hobbies?: string[];
+  personal?: {
+    job_title?: string | null;
+    work_authorization?: string | null;
+    notes?: string | null;
+  };
+  links?: string[];
+};
+
+export type ProfileResumePayload = {
+  candidate_profile: CandidateProfile;
+  content: ResumeContentJson;
+};
+
 export type AuthPayload = {
   access_token: string;
   token_type: string;
@@ -70,8 +162,62 @@ export async function apiFetch<T>(
     credentials: "include",
   });
 
-  const body = (await res.json()) as ApiEnvelope<T>;
-  return { status: res.status, body };
+  let raw: unknown = null;
+  const text = await res.text();
+  if (!text) {
+    return {
+      status: res.status,
+      body: {
+        data: null,
+        metadata: {},
+        errors:
+          res.status >= 200 && res.status < 300
+            ? []
+            : [{ code: "empty_response", message: `Request failed (${res.status}).` }],
+      },
+    };
+  }
+  try {
+    raw = JSON.parse(text);
+  } catch {
+    return {
+      status: res.status,
+      body: {
+        data: null,
+        metadata: {},
+        errors: [{ code: "invalid_response", message: `Request failed (${res.status}).` }],
+      },
+    };
+  }
+
+  const body = raw as ApiEnvelope<T> & {
+    detail?: string | Array<{ msg?: string; loc?: unknown[] }>;
+  };
+
+  // Normalize FastAPI validation errors into our envelope shape.
+  if ((!body.errors || body.errors.length === 0) && body.detail) {
+    const detail = body.detail;
+    const message = Array.isArray(detail)
+      ? detail.map((d) => d.msg || JSON.stringify(d)).join("; ")
+      : String(detail);
+    return {
+      status: res.status,
+      body: {
+        data: body.data ?? null,
+        metadata: body.metadata ?? {},
+        errors: [{ code: "validation_error", message }],
+      },
+    };
+  }
+
+  return {
+    status: res.status,
+    body: {
+      data: body.data ?? null,
+      metadata: body.metadata ?? {},
+      errors: body.errors ?? [],
+    },
+  };
 }
 
 export async function register(input: {
@@ -116,6 +262,7 @@ export type ResumeItem = {
   id: string;
   title: string | null;
   status: string;
+  origin?: "uploaded" | "generated";
   source_mime_type: string | null;
   source_checksum: string | null;
   source_object_key: string | null;
@@ -123,25 +270,58 @@ export type ResumeItem = {
   created_at: string;
   updated_at: string;
   content?: ResumeContentJson | null;
+  parser?: string | null;
+  ai_parse_error?: string | null;
 };
 
-export type ResumeContentJson = {
-  schema_version?: string;
-  contact?: {
-    name?: string | null;
-    email?: string | null;
-    phone?: string | null;
-    location?: string | null;
-  };
-  headline?: string | null;
-  summary?: string | null;
-  experience?: Array<{ title?: string | null; company?: string | null }>;
-  skills?: string[];
-  education?: Array<{ institution?: string | null }>;
-};
+export async function listResumes(opts?: {
+  origin?: "uploaded" | "generated" | "all";
+  sort?: "created_at" | "updated_at";
+  order?: "asc" | "desc";
+}) {
+  const params = new URLSearchParams();
+  if (opts?.origin && opts.origin !== "all") params.set("origin", opts.origin);
+  if (opts?.sort) params.set("sort", opts.sort);
+  if (opts?.order) params.set("order", opts.order);
+  const qs = params.toString();
+  return apiFetch<{ items: ResumeItem[] }>(`/api/v1/resumes${qs ? `?${qs}` : ""}`);
+}
 
-export async function listResumes() {
-  return apiFetch<{ items: ResumeItem[] }>("/api/v1/resumes");
+export async function saveResumeFromContent(input: {
+  title: string;
+  content: ResumeContentJson | Record<string, unknown>;
+  parent_resume_id?: string;
+  job_posting_id?: string;
+}) {
+  return apiFetch<ResumeItem>("/api/v1/resumes/from-content", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateResume(
+  id: string,
+  input: { title?: string; content?: ResumeContentJson | Record<string, unknown> },
+) {
+  return apiFetch<ResumeItem>(`/api/v1/resumes/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteResume(id: string) {
+  return apiFetch<null>(`/api/v1/resumes/${id}`, { method: "DELETE" });
+}
+
+export async function getMyProfile() {
+  return apiFetch<ProfileResumePayload>("/api/v1/me/profile");
+}
+
+export async function updateMyProfile(content: ResumeContentJson | Record<string, unknown>) {
+  return apiFetch<ProfileResumePayload>("/api/v1/me/profile", {
+    method: "PUT",
+    body: JSON.stringify({ content }),
+  });
 }
 
 export async function uploadResume(file: File, title?: string) {
@@ -177,6 +357,110 @@ export type JobItem = {
   created_at: string;
   updated_at: string;
 };
+
+export type TailorSuggestion = {
+  id: string;
+  section: string;
+  title: string;
+  rationale: string;
+  path: string;
+  before: unknown;
+  after: unknown;
+  selected_by_default: boolean;
+};
+
+export type TailorResult = {
+  model_version: string;
+  resume_id: string;
+  job_posting_id: string;
+  job_title: string;
+  job_company: string | null;
+  job_url: string | null;
+  match_preview: {
+    score?: number;
+    confidence?: number;
+    matched_skills?: string[];
+    missing_skills?: string[];
+    reasons?: string[];
+  };
+  suggestions: TailorSuggestion[];
+  current_content: Record<string, unknown>;
+  proposed_content: Record<string, unknown>;
+  applied_content?: Record<string, unknown> | null;
+};
+
+export async function ingestLinkedInJobUrl(input: {
+  url: string;
+  description_override?: string;
+}) {
+  return apiFetch<{ created: boolean; job: JobItem }>("/api/v1/jobs/from-linkedin-url", {
+    method: "POST",
+    body: JSON.stringify({
+      ...input,
+      url: canonicalizeLinkedInJobUrl(input.url),
+    }),
+  });
+}
+
+/** Prefer short /jobs/view/{id}/ form so tracking query strings don't blow request limits. */
+export function canonicalizeLinkedInJobUrl(url: string): string {
+  const text = url.trim();
+  const match =
+    text.match(/linkedin\.com\/(?:jobs\/view|jobs\/collections\/[^/]+\/)\/(\d{6,})/i) ||
+    text.match(/currentJobId=(\d{6,})/i) ||
+    text.match(/^(\d{6,})$/);
+  if (match?.[1]) {
+    return `https://www.linkedin.com/jobs/view/${match[1]}/`;
+  }
+  return text;
+}
+
+export async function tailorResume(
+  resumeId: string,
+  input: {
+    job_posting_id?: string;
+    job_url?: string;
+    description_override?: string;
+    selected_suggestion_ids?: string[];
+  },
+) {
+  return apiFetch<TailorResult>(`/api/v1/resumes/${resumeId}/tailor`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export type CoverLetterResult = {
+  model_version: string;
+  resume_id: string;
+  job_posting_id: string;
+  job_title: string;
+  job_company: string | null;
+  job_url: string | null;
+  tone: string;
+  recipient: string;
+  subject: string;
+  text: string;
+  highlights: {
+    matched_skills?: string[];
+    latest_role?: string | null;
+    latest_company?: string | null;
+  };
+};
+
+export async function generateCoverLetter(
+  resumeId: string,
+  input: {
+    job_posting_id?: string;
+    job_url?: string;
+    description_override?: string;
+  },
+) {
+  return apiFetch<CoverLetterResult>(`/api/v1/resumes/${resumeId}/cover-letter`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
 
 export type JobFilters = {
   query?: string;
