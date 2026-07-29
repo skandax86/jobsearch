@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { ProfileStructuredSections } from "@/components/ProfileStructuredSections";
 import {
+  deleteApplication,
   deleteResume,
   discoverJobs,
   fetchMe,
@@ -14,6 +15,7 @@ import {
   getMyProfile,
   getResume,
   ingestLinkedInJobUrl,
+  listApplications,
   listJobs,
   listMatches,
   listResumes,
@@ -23,9 +25,12 @@ import {
   runMatching,
   saveResumeFromContent,
   tailorResume,
+  updateApplicationStatus,
   updateMyProfile,
   updateResume,
   uploadResume,
+  upsertApplication,
+  type ApplicationStatus,
   type CoverLetterResult,
   type JobItem,
   type JobProvidersStatus,
@@ -113,9 +118,10 @@ export type DashboardSection =
   | "matches"
   | "tracker";
 
-type TrackerStatus = "interested" | "tailored" | "applied" | "interview" | "rejected";
+type TrackerStatus = ApplicationStatus;
 type TrackedJob = {
   id: string;
+  applicationId?: string;
   title: string;
   company: string | null;
   url: string | null;
@@ -139,6 +145,12 @@ function readTrackedJobs(): TrackedJob[] {
 
 function writeTrackedJobs(items: TrackedJob[]) {
   window.localStorage.setItem(TRACKER_KEY, JSON.stringify(items));
+}
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
 }
 
 export function LegacyDashboardSection({ section }: { section: DashboardSection }) {
@@ -388,31 +400,75 @@ function DashboardContent({ section }: { section: DashboardSection }) {
 
 
   useEffect(() => {
-    setTrackedJobs(readTrackedJobs());
+    let cancelled = false;
+    (async () => {
+      const { status, body } = await listApplications();
+      if (cancelled) return;
+      if (status >= 200 && status < 300 && body.data?.items) {
+        const items: TrackedJob[] = body.data.items.map((app) => ({
+          id: app.job_posting_id,
+          applicationId: app.id,
+          title: app.title || "Untitled role",
+          company: app.company,
+          url: app.url,
+          status: (app.status as TrackerStatus) || "interested",
+          updatedAt: app.updated_at,
+        }));
+        setTrackedJobs(items);
+        writeTrackedJobs(items);
+        return;
+      }
+      setTrackedJobs(readTrackedJobs());
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  function upsertTrackedJob(
+  async function upsertTrackedJob(
     job: { id: string; title: string; company?: string | null; url?: string | null },
     status: TrackerStatus = "interested",
   ) {
+    const local: TrackedJob = {
+      id: job.id,
+      title: job.title,
+      company: job.company ?? null,
+      url: job.url ?? null,
+      status,
+      updatedAt: new Date().toISOString(),
+    };
     setTrackedJobs((prev) => {
-      const next: TrackedJob[] = [
-        {
-          id: job.id,
-          title: job.title,
-          company: job.company ?? null,
-          url: job.url ?? null,
-          status,
-          updatedAt: new Date().toISOString(),
-        },
-        ...prev.filter((item) => item.id !== job.id),
-      ];
+      const next = [local, ...prev.filter((item) => item.id !== job.id)];
       writeTrackedJobs(next);
       return next;
     });
+    if (!isUuid(job.id)) return;
+    const { status: httpStatus, body } = await upsertApplication({
+      job_posting_id: job.id,
+      status,
+    });
+    if (httpStatus >= 200 && httpStatus < 300 && body.data) {
+      setTrackedJobs((prev) => {
+        const next = prev.map((item) =>
+          item.id === job.id
+            ? {
+                ...item,
+                applicationId: body.data!.id,
+                title: body.data!.title || item.title,
+                company: body.data!.company ?? item.company,
+                url: body.data!.url ?? item.url,
+                status: (body.data!.status as TrackerStatus) || status,
+                updatedAt: body.data!.updated_at,
+              }
+            : item,
+        );
+        writeTrackedJobs(next);
+        return next;
+      });
+    }
   }
 
-  function updateTrackedStatus(id: string, status: TrackerStatus) {
+  async function updateTrackedStatus(id: string, status: TrackerStatus) {
     setTrackedJobs((prev) => {
       const next = prev.map((item) =>
         item.id === id ? { ...item, status, updatedAt: new Date().toISOString() } : item,
@@ -420,14 +476,26 @@ function DashboardContent({ section }: { section: DashboardSection }) {
       writeTrackedJobs(next);
       return next;
     });
+    const current = trackedJobs.find((item) => item.id === id);
+    if (current?.applicationId) {
+      await updateApplicationStatus(current.applicationId, status);
+      return;
+    }
+    if (isUuid(id)) {
+      await upsertApplication({ job_posting_id: id, status });
+    }
   }
 
-  function removeTrackedJob(id: string) {
+  async function removeTrackedJob(id: string) {
+    const current = trackedJobs.find((item) => item.id === id);
     setTrackedJobs((prev) => {
       const next = prev.filter((item) => item.id !== id);
       writeTrackedJobs(next);
       return next;
     });
+    if (current?.applicationId) {
+      await deleteApplication(current.applicationId);
+    }
   }
 
   async function onLogout() {
@@ -1786,8 +1854,7 @@ function DashboardContent({ section }: { section: DashboardSection }) {
                 <div>
                   <h2 className="text-lg font-semibold">Job tracker</h2>
                   <p className="text-sm text-slate-600">
-                    Track roles you fetch, tailor, or shortlist. Status is saved in this browser
-                    for now.
+                    Track roles you fetch, tailor, or shortlist. Status syncs to your account.
                   </p>
                 </div>
                 {trackedJobs.length === 0 ? (

@@ -1,0 +1,17 @@
+{
+  "server": "naukri",
+  "version": "0.1",
+  "runtime": "tools/naukri-mcp",
+  "env_file": ".env.naukri",
+  "cursor": ".cursor/mcp.json → naukri-mcp",
+  "tools_sample": [
+    "search_jobs",
+    "get_job_details",
+    "list_pending_jobs",
+    "approve_job",
+    "apply_job",
+    "get_resume_data",
+    "generate_and_upload_resume",
+    "sync_application_statuses"
+  ]
+}

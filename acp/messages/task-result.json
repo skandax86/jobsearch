@@ -1,0 +1,20 @@
+{
+  "message_id": "33333333-3333-3333-3333-333333333333",
+  "workflow_id": "22222222-2222-2222-2222-222222222222",
+  "correlation_id": "169d2bea-6b30-4a16-a117-e90519146775",
+  "sender": "resume",
+  "receiver": "orchestrator",
+  "task_type": "structure_heuristic.result",
+  "attempt": 1,
+  "deadline": null,
+  "policy_ref": "automation-policy-v1",
+  "payload": {
+    "status": "SUCCESS",
+    "confidence": 0.92,
+    "warnings": [],
+    "parser": "heuristic_v2",
+    "outcome": "ok",
+    "content_ref": "resume_contents:<uuid>"
+  },
+  "payload_ref": null
+}

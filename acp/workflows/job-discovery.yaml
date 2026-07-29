@@ -1,0 +1,38 @@
+id: job_discovery
+version: "0.2"
+status: implemented
+runtime: apps/api/src/careerpilot/acp/workflows/job_discovery.py
+description: Search and ingest job postings from configured providers (ACP + LinkedIn MCP context).
+
+input:
+  required: []
+  properties:
+    query: { type: string }
+    location: { type: string }
+    include_remotive: { type: boolean }
+    include_naukri: { type: boolean }
+    include_demo: { type: boolean }
+    limit: { type: integer }
+
+steps:
+  - id: linkedin_status
+    agent: search
+    mcp: [{ server: linkedin, tool: linkedin_connection_status }]
+  - id: linkedin_profile
+    agent: search
+    mcp: [{ server: linkedin, tool: linkedin_get_profile }]
+    optional: true
+  - id: search_providers
+    agent: search
+  - id: rank_preview
+    agent: ranking
+    status: stub
+
+output:
+  items: job_posting[]
+  item_ids: uuid[]
+  providers: string[]
+  linkedin_connected: boolean
+
+terminal_status: [completed, failed]
+human_gate: none

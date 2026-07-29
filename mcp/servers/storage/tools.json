@@ -1,0 +1,14 @@
+[
+  {
+    "name": "put_object",
+    "description": "Store bytes at an object key (base64 payload).",
+    "status": "implemented",
+    "runtime": "apps/api/src/careerpilot/mcp/storage/server.py"
+  },
+  {
+    "name": "get_object",
+    "description": "Read object bytes by key (returns base64).",
+    "status": "implemented",
+    "runtime": "apps/api/src/careerpilot/mcp/storage/server.py"
+  }
+]

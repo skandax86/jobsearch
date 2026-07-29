@@ -1,0 +1,16 @@
+{
+  "message_id": "11111111-1111-1111-1111-111111111111",
+  "workflow_id": "22222222-2222-2222-2222-222222222222",
+  "correlation_id": "169d2bea-6b30-4a16-a117-e90519146775",
+  "sender": "orchestrator",
+  "receiver": "resume",
+  "task_type": "structure_heuristic",
+  "attempt": 1,
+  "deadline": null,
+  "policy_ref": "automation-policy-v1",
+  "payload": {
+    "text_chars": 3545,
+    "sections_order": ["header", "summary", "experience", "projects", "education", "skills", "certifications"]
+  },
+  "payload_ref": null
+}

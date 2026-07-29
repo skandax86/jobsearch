@@ -1,4 +1,4 @@
-.PHONY: help up down logs infra api web install test lint migrate migrate-create migrate-down naukri-mcp-setup
+.PHONY: help up down logs infra api web install test lint migrate migrate-create migrate-down naukri-mcp-setup check-contracts resume-mcp
 
 help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
@@ -42,6 +42,12 @@ naukri-mcp-setup: ## Clone + install Naukri MCP (Cursor + in-app discovery)
 	@test -f .env.naukri || cp .env.naukri.example .env.naukri
 	cd apps/api && . .venv/bin/activate && pip install -e '.[naukri]' && playwright install chromium
 	@echo "Fill credentials in .env.naukri. Dashboard: enable Naukri checkbox. Cursor: enable naukri-mcp in Settings → MCP."
+
+check-contracts: ## Validate ACP/MCP/agent contracts vs runtime
+	cd apps/api && . .venv/bin/activate && PYTHONPATH=src python ../../tools/check-contracts.py
+
+resume-mcp: ## Smoke-list resume MCP tools
+	cd apps/api && . .venv/bin/activate && PYTHONPATH=src python -c "from careerpilot.mcp.resume.server import resume_mcp; print(resume_mcp.list_tools())"
 
 test: ## Run all tests
 	cd apps/api && . .venv/bin/activate && PYTHONPATH=src pytest

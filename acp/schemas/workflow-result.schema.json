@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://careerpilot.ai/schemas/acp/workflow-result.json",
+  "title": "AcpWorkflowResult",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "output", "tasks"],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["completed", "failed", "needs_review", "cancelled", "timed_out"]
+    },
+    "output": { "type": "object" },
+    "error": { "type": ["string", "null"] },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["step", "status"],
+        "properties": {
+          "step": { "type": "string" },
+          "status": { "type": "string" },
+          "agent": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}

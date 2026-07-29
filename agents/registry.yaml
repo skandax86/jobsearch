@@ -1,0 +1,64 @@
+version: "1.0"
+updated: "2026-07-30"
+agents:
+  - id: planner
+    folder: planner
+    status: planned
+    workflows: [job_discovery, tailor_resume, apply_job]
+  - id: supervisor
+    folder: supervisor
+    status: planned
+    workflows: [tailor_resume, apply_job]
+  - id: resume
+    folder: resume
+    status: implemented
+    workflows: [resume_parse, tailor_resume]
+    runtime: apps/api/src/careerpilot/acp/workflows/resume_parse.py
+    mcp: [resume, storage]
+  - id: search
+    folder: search
+    status: implemented
+    workflows: [job_discovery]
+    runtime: apps/api/src/careerpilot/acp/workflows/job_discovery.py
+    mcp: [naukri, linkedin]
+  - id: ranking
+    folder: ranking
+    status: partial
+    workflows: [job_discovery]
+    runtime: apps/api/src/careerpilot/domains/intelligence/
+  - id: optimizer
+    folder: optimizer
+    status: implemented
+    workflows: [tailor_resume]
+    runtime: apps/api/src/careerpilot/acp/workflows/tailor_resume.py
+  - id: cover_letter
+    folder: cover-letter
+    status: partial
+    workflows: [tailor_resume, apply_job]
+  - id: application
+    folder: application
+    status: partial
+    workflows: [apply_job]
+    runtime: apps/api/src/careerpilot/domains/applications/
+    mcp: [naukri]
+  - id: tracker
+    folder: tracker
+    status: implemented
+    workflows: [track_applications]
+    runtime: apps/api/src/careerpilot/domains/applications/service.py
+  - id: interview
+    folder: interview
+    status: planned
+    workflows: []
+  - id: career_coach
+    folder: career-coach
+    status: planned
+    workflows: []
+  - id: recruiter
+    folder: recruiter
+    status: planned
+    workflows: []
+  - id: notification
+    folder: notification
+    status: planned
+    workflows: [apply_job]

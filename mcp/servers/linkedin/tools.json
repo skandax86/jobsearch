@@ -1,0 +1,11 @@
+{
+  "server": "linkedin",
+  "version": "0.1",
+  "runtime_in_process": "apps/api/src/careerpilot/mcp/linkedin/server.py",
+  "runtime_cursor": "uvx mcp-server-linkedin@latest",
+  "tools_in_process": [
+    "linkedin_connection_status",
+    "linkedin_get_profile",
+    "linkedin_search_jobs"
+  ]
+}

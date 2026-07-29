@@ -1,0 +1,31 @@
+id: tailor_resume
+version: "0.2"
+status: implemented
+runtime: apps/api/src/careerpilot/acp/workflows/tailor_resume.py
+description: Propose resume edits for a target job; apply only selected suggestions in UI.
+
+input:
+  required: [resume_id]
+  properties:
+    job_posting_id: { type: uuid }
+    job_title: { type: string }
+    job_description: { type: string }
+    company_name: { type: string }
+
+steps:
+  - id: load_resume
+    agent: resume
+  - id: load_job
+    agent: search
+  - id: propose
+    agent: optimizer
+  - id: human_select
+    agent: supervisor
+    human_gate: true
+
+output:
+  proposal: object
+  suggestions: tailor_suggestion[]
+
+terminal_status: [needs_review, completed, failed]
+human_gate: required before applying factual changes (UI)

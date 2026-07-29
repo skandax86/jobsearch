@@ -1,0 +1,48 @@
+id: resume_parse
+version: "1.0"
+status: implemented
+runtime: apps/api/src/careerpilot/acp/workflows/resume_parse.py
+description: >
+  Extract text from an uploaded resume, segment sections, structure via
+  heuristic (+ optional AI), validate, and return CareerPilot resume JSON.
+
+input:
+  required: [mime_type, data_b64]
+  properties:
+    resume_id: { type: uuid }
+    mime_type: { type: string }
+    data_b64: { type: string, description: Base64 source bytes }
+
+steps:
+  - id: extract_text
+    agent: resume
+    mcp: { server: resume, tool: extract_resume_text }
+  - id: segment_sections
+    agent: resume
+    mcp: { server: resume, tool: segment_resume_sections }
+  - id: structure_heuristic
+    agent: resume
+    mcp: { server: resume, tool: structure_resume_heuristic }
+  - id: structure_ai
+    agent: resume
+    optional: true
+    when: resume_ai_enabled
+    mcp: { server: resume, tool: structure_resume_ai }
+    on_error: fallback_heuristic
+  - id: validate
+    agent: resume
+    mcp: { server: resume, tool: validate_resume_json }
+
+output:
+  content: resume_content_v1.1
+  parser: string
+  confidence: number
+  needs_review: boolean
+  content_checksum: string
+
+terminal_status:
+  - completed
+  - needs_review
+  - failed
+
+human_gate: needs_review when confidence < 0.8 or sparse structure

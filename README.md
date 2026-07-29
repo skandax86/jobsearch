@@ -6,13 +6,19 @@ AI-native Career Operating System — monorepo scaffold.
 
 ```text
 careerpilot-ai/
+├── acp/              # ACP contracts (workflows, messages, schemas)
+├── agents/           # Agent registry + per-agent specs
+├── mcp/              # MCP server/client contracts
 ├── apps/
-│   ├── api/          # FastAPI backend (modular monolith)
+│   ├── api/          # FastAPI runtime (acp + agents + mcp implementations)
 │   └── web/          # Next.js dashboard
 ├── docs/             # Architecture & domain specifications
+├── tools/            # Local CLIs (Naukri MCP, resume MCP)
 ├── infra/            # Docker, Terraform (future)
 └── docker-compose.yml
 ```
+
+Contracts in `acp/`, `agents/`, and `mcp/` map to runtime code under `apps/api/src/careerpilot/`. See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## Prerequisites
 
@@ -59,6 +65,8 @@ make web
 | 6 | Job discovery | ✅ (demo + Remotive + optional Naukri) |
 | 7 | Job matching / scoring | ✅ |
 | 8 | LinkedIn personal connect + MCP + Job Discovery agent | ✅ |
+| 9 | ACP resume_parse + resume MCP tools | ✅ |
+| 10 | Top-level acp/ agents/ mcp/ contracts | ✅ |
 
 ## Cursor MCP (optional)
 

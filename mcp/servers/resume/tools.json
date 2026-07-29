@@ -1,0 +1,38 @@
+{
+  "server": "resume",
+  "version": "1.0",
+  "runtime": "apps/api/src/careerpilot/mcp/resume/server.py",
+  "tools": [
+    {
+      "name": "extract_resume_text",
+      "input": { "mime_type": "string", "data_b64": "string" },
+      "output": { "text": "string", "char_count": "number" }
+    },
+    {
+      "name": "segment_resume_sections",
+      "input": { "text": "string" },
+      "output": { "segments": "object", "order": "string[]", "section_prompt": "string" }
+    },
+    {
+      "name": "structure_resume_heuristic",
+      "input": { "text": "string" },
+      "output": { "content": "resume_content_v1.1", "parser": "heuristic_v2" }
+    },
+    {
+      "name": "structure_resume_ai",
+      "input": { "text": "string" },
+      "output": { "content": "resume_content_v1.1", "parser": "ai_v3" },
+      "errors": ["ai_disabled", "ai_timeout", "ai_unreachable", "ai_invalid_json"]
+    },
+    {
+      "name": "validate_resume_json",
+      "input": { "content": "object" },
+      "output": {
+        "content": "resume_content_v1.1",
+        "confidence": "number",
+        "needs_review": "boolean",
+        "content_checksum": "string"
+      }
+    }
+  ]
+}

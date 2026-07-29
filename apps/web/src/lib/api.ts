@@ -637,8 +637,65 @@ export async function runJobDiscoveryAgent(input?: JobFilters) {
     items: JobItem[];
     confidence: number;
     outcome: string;
+    workflow_id?: string;
+    workflow_status?: string;
+    acp_tasks?: Array<Record<string, unknown>>;
   }>("/api/v1/agents/job-discovery/run", {
     method: "POST",
     body: JSON.stringify(input ?? {}),
   });
 }
+
+export type ApplicationStatus =
+  | "interested"
+  | "tailored"
+  | "applied"
+  | "interview"
+  | "rejected"
+  | "draft"
+  | "cancelled";
+
+export type ApplicationItem = {
+  id: string;
+  job_posting_id: string;
+  status: ApplicationStatus | string;
+  title: string | null;
+  company: string | null;
+  url: string | null;
+  idempotency_key: string;
+  updated_at: string;
+  created_at: string;
+};
+
+export async function listApplications() {
+  return apiFetch<{ items: ApplicationItem[]; total: number }>("/api/v1/applications");
+}
+
+export async function upsertApplication(input: {
+  job_posting_id: string;
+  status?: ApplicationStatus;
+  idempotency_key?: string;
+}) {
+  return apiFetch<ApplicationItem>("/api/v1/applications", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateApplicationStatus(
+  applicationId: string,
+  status: ApplicationStatus,
+  reason?: string,
+) {
+  return apiFetch<ApplicationItem>(`/api/v1/applications/${applicationId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status, reason }),
+  });
+}
+
+export async function deleteApplication(applicationId: string) {
+  return apiFetch<{ ok: boolean }>(`/api/v1/applications/${applicationId}`, {
+    method: "DELETE",
+  });
+}
+

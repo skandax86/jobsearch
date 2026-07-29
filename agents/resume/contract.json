@@ -1,0 +1,18 @@
+{
+  "agent_id": "resume",
+  "version": "1.0",
+  "tasks": {
+    "extract_text": { "mcp": "resume.extract_resume_text" },
+    "segment_sections": { "mcp": "resume.segment_resume_sections" },
+    "structure_heuristic": { "mcp": "resume.structure_resume_heuristic" },
+    "structure_ai": { "mcp": "resume.structure_resume_ai" },
+    "validate": { "mcp": "resume.validate_resume_json" }
+  },
+  "result_envelope": {
+    "result": "object",
+    "confidence": "number",
+    "warnings": "string[]",
+    "provenance": "object",
+    "outcome": "ok | needs_review | error"
+  }
+}

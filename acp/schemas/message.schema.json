@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://careerpilot.ai/schemas/acp/message.json",
+  "title": "AcpMessage",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "message_id",
+    "workflow_id",
+    "correlation_id",
+    "sender",
+    "receiver",
+    "task_type",
+    "attempt",
+    "payload"
+  ],
+  "properties": {
+    "message_id": { "type": "string", "format": "uuid" },
+    "workflow_id": { "type": "string", "format": "uuid" },
+    "correlation_id": { "type": "string", "minLength": 1 },
+    "sender": { "type": "string", "minLength": 1 },
+    "receiver": { "type": "string", "minLength": 1 },
+    "task_type": { "type": "string", "minLength": 1 },
+    "attempt": { "type": "integer", "minimum": 1 },
+    "deadline": { "type": ["string", "null"], "format": "date-time" },
+    "policy_ref": { "type": ["string", "null"] },
+    "payload": { "type": "object" },
+    "payload_ref": { "type": ["string", "null"] }
+  }
+}

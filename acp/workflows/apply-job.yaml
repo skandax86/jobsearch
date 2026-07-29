@@ -1,0 +1,33 @@
+id: apply_job
+version: "0.1"
+status: planned
+runtime: null
+description: Prepare and submit an approved application package via ATS/MCP.
+
+input:
+  required: [job_posting_id, resume_id]
+  properties:
+    cover_letter_id: { type: uuid }
+    automation_policy: { type: string }
+
+steps:
+  - id: assemble_package
+    agent: application
+  - id: approve
+    agent: supervisor
+    human_gate: true
+  - id: submit
+    agent: application
+    mcp_optional:
+      - { server: naukri, tool: apply_job }
+  - id: record
+    agent: tracker
+  - id: notify
+    agent: notification
+
+output:
+  application_id: uuid
+  submission_evidence: object
+
+terminal_status: [completed, failed, cancelled, waiting_for_approval]
+human_gate: always before submit
